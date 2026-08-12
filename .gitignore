@@ -1,0 +1,246 @@
+# ============================================================
+# Sebastian — Git Ignore
+# ============================================================
+
+# ------------------------------------------------------------
+# Environment / Secrets
+# ------------------------------------------------------------
+
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Local credentials / tokens
+credentials.json
+secrets.json
+secrets/
+credentials/
+
+# ------------------------------------------------------------
+# Python
+# ------------------------------------------------------------
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python packaging / build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Type checking / lint caches
+.mypy_cache/
+.pyre/
+.ruff_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ------------------------------------------------------------
+# Node.js / JavaScript / TypeScript
+# ------------------------------------------------------------
+
+node_modules/
+.npm/
+.yarn/
+.pnpm-store/
+
+# Build output
+.next/
+.nuxt/
+dist/
+build/
+out/
+
+# Vite / bundler caches
+.vite/
+.turbo/
+
+# TypeScript
+*.tsbuildinfo
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ------------------------------------------------------------
+# Rust
+# ------------------------------------------------------------
+
+/target/
+
+# Rust incremental/build artifacts
+Cargo.lock.old
+
+# ------------------------------------------------------------
+# AI / ML / Model Artifacts
+# ------------------------------------------------------------
+
+# Model weights / checkpoints
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.bin
+
+# Large local datasets
+data/
+datasets/
+*.csv
+*.parquet
+*.jsonl
+
+# Local experiment outputs
+runs/
+outputs/
+checkpoints/
+wandb/
+mlruns/
+
+# Hugging Face cache
+.cache/
+huggingface/
+transformers/
+
+# ------------------------------------------------------------
+# Sebastian Local Runtime / Generated Data
+# ------------------------------------------------------------
+
+# Local runtime state
+.runtime/
+runtime/
+state/
+sessions/
+workspace/
+
+# Local execution outputs
+execution_logs/
+tool_logs/
+artifacts/
+tmp/
+temp/
+
+# Generated files
+generated/
+generated_files/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# ------------------------------------------------------------
+# Logs
+# ------------------------------------------------------------
+
+*.log
+logs/
+
+# ------------------------------------------------------------
+# IDE / Editors
+# ------------------------------------------------------------
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+.idea/
+*.iml
+
+# ------------------------------------------------------------
+# Operating System
+# ------------------------------------------------------------
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+
+# ------------------------------------------------------------
+# Temporary / Backup Files
+# ------------------------------------------------------------
+
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*.swo
+
+# ------------------------------------------------------------
+# Local AI / Agent Scratch Data
+# ------------------------------------------------------------
+
+.agent/
+.agents/
+.agent_state/
+agent_state/
+
+# Tool execution scratch
+.tool_state/
+.tool_cache/
+tool_cache/
+
+# ------------------------------------------------------------
+# Local configuration
+# ------------------------------------------------------------
+
+*.local
+*.local.json
+*.local.yaml
+*.local.yml
+
+# ------------------------------------------------------------
+# OS / editor noise
+# ------------------------------------------------------------
+
+.vscode-test/
+.history/
+
+# ------------------------------------------------------------
+# Docker local overrides
+# ------------------------------------------------------------
+
+docker-compose.override.yml
+
+# ------------------------------------------------------------
+# Miscellaneous generated files
+# ------------------------------------------------------------
+
+coverage/
+.cache/
