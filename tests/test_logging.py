@@ -1,10 +1,13 @@
 import logging
 
+from app.core.config import load_settings
 from app.core.logging import configure_logging
 
 
 def test_logging_configuration(caplog):
-    configure_logging()
+    settings = load_settings()
+
+    configure_logging(settings)
 
     logger = logging.getLogger("sebastian")
 
@@ -12,7 +15,6 @@ def test_logging_configuration(caplog):
         logger.info("test_event")
 
     assert "test_event" in caplog.text
-    
     
 #     configure_logging()
 #         ↓
