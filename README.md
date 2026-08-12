@@ -3,7 +3,7 @@
 > **Give Sebastian the outcome. He figures out the work.**
 
 <p align="center">
-  <img src="Sebastian/public/sebastian.png" alt="Sebastian" width="500">
+  <img src="public/sebastian.png" alt="Sebastian" width="500">
 </p>
 
 Sebastian is an **AI execution layer** designed to turn natural-language goals into real, verified digital actions.
