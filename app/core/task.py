@@ -10,4 +10,4 @@ class TaskStatus(str, Enum):
 class Task(BaseModel):
     id: str
     goal: str = Field(min_length=1)
-    status: TaskStatus = TaskStatus.PENDING
+    status: TaskStatus = TaskStatus.PENDING 
