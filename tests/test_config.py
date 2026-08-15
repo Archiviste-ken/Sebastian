@@ -1,4 +1,4 @@
-from app.core.config import load_settings
+from app.models.config import load_settings
 
 
 def test_default_settings():

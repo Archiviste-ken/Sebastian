@@ -1,7 +1,7 @@
 import logging
 
-from app.core.config import load_settings
-from app.core.logging import configure_logging
+from app.models.config import load_settings
+from app.models.logging import configure_logging
 
 
 def test_logging_configuration(caplog):

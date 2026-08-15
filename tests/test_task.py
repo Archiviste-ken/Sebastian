@@ -1,7 +1,11 @@
 import pytest
 from pydantic import ValidationError
-
-from app.core.task import Task, TaskStatus
+from app.models.task import (
+    Task,
+    TaskStatus,
+    can_transition,
+)
+from app.models.task import Task, TaskStatus
 
 
 def test_task_defaults_to_pending():
@@ -37,3 +41,16 @@ def test_task_rejects_empty_goal():
             id="task-2",
             goal="",
         )
+        
+def test_valid_transition():
+    assert can_transition(
+        TaskStatus.PENDING,
+        TaskStatus.PLANNING,
+    )
+
+
+def test_invalid_transition():
+    assert not can_transition(
+        TaskStatus.COMPLETED,
+        TaskStatus.EXECUTING,
+    )
