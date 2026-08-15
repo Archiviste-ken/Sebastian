@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.task import Task, TaskStatus
+from app.core.task import Task, TaskStatus
 
 
 def test_task_defaults_to_pending():
