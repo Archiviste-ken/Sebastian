@@ -5,9 +5,14 @@ description = "Sebastian AI Execution Layer"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.0",
+    "fastapi>=0.100",
+    "sqlalchemy>=2.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=9.0",
 ]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
