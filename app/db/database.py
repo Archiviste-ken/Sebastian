@@ -1,6 +1,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app.db.models import Base
+
 
 DATABASE_URL = "sqlite:///./sebastian.db"
 
@@ -14,3 +16,7 @@ SessionLocal = sessionmaker(
     autoflush=False,
     autocommit=False,
 )
+
+
+def create_tables() -> None:
+    Base.metadata.create_all(bind=engine)
