@@ -1,15 +1,24 @@
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI
 from sqlalchemy.orm import Session
 
 from app.api.schemas import TaskCreateRequest
-from app.db.database import SessionLocal
+from app.db.database import SessionLocal, create_tables
 from app.db.repositories.task_repository import TaskRepository
 from app.models.task import Task
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_tables()
+    yield
 
 
 app = FastAPI(
     title="Sebastian",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 
