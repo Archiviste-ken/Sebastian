@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.schemas import TaskCreateRequest
@@ -48,5 +48,22 @@ def create_task(
 
     repository = TaskRepository(db)
     repository.create(task)
+
+    return task
+
+
+@app.get("/tasks/{task_id}")
+def get_task(
+    task_id: str,
+    db: Session = Depends(get_db),
+):
+    repository = TaskRepository(db)
+    task = repository.get(task_id)
+
+    if task is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found",
+        )
 
     return task
