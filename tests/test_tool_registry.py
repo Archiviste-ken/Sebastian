@@ -1,5 +1,4 @@
-import pytest
-
+from app.tools.definition import ToolDefinition
 from app.tools.registry import ToolRegistry
 
 
@@ -11,34 +10,65 @@ def goodbye():
     return "Goodbye from Sebastian"
 
 
+def make_hello_tool():
+    return ToolDefinition(
+        name="hello",
+        description="Say hello",
+        handler=hello,
+    )
+
+
+def make_goodbye_tool():
+    return ToolDefinition(
+        name="goodbye",
+        description="Say goodbye",
+        handler=goodbye,
+    )
+
+
 def test_register_and_get_tool():
     registry = ToolRegistry()
 
-    registry.register("hello", hello)
+    tool = make_hello_tool()
 
-    assert registry.get("hello") is hello
+    registry.register(tool)
+
+    result = registry.get("hello")
+
+    assert result is tool
 
 
 def test_unknown_tool_raises_error():
     registry = ToolRegistry()
 
-    with pytest.raises(KeyError):
+    try:
         registry.get("does_not_exist")
+        assert False
+    except KeyError:
+        pass
 
 
 def test_duplicate_tool_registration_raises_error():
     registry = ToolRegistry()
 
-    registry.register("hello", hello)
+    registry.register(make_hello_tool())
 
-    with pytest.raises(ValueError):
-        registry.register("hello", goodbye)
+    try:
+        registry.register(make_hello_tool())
+        assert False
+    except ValueError:
+        pass
 
 
 def test_list_tools():
     registry = ToolRegistry()
 
-    registry.register("hello", hello)
-    registry.register("goodbye", goodbye)
+    hello_tool = make_hello_tool()
+    goodbye_tool = make_goodbye_tool()
 
-    assert registry.list_tools() == ["hello", "goodbye"]
+    registry.register(hello_tool)
+    registry.register(goodbye_tool)
+
+    tools = registry.list_tools()
+
+    assert tools == [hello_tool, goodbye_tool]
