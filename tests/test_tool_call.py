@@ -16,3 +16,15 @@ def test_tool_call_creation():
 
     assert tool_call.tool_name == "read_file"
     assert tool_call.arguments["path"] == "app/main.py"
+    
+    
+def test_tool_call_contains_name_and_arguments():
+    tool_call = ToolCall(
+        tool_name="hello",
+        arguments={
+            "name": "Shreyesh",
+        },
+    )
+
+    assert tool_call.tool_name == "hello"
+    assert tool_call.arguments["name"] == "Shreyesh"
