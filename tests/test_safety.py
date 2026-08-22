@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from app.models.tool_call import ToolCall
 from app.security.safety import ToolSafety
 
@@ -27,3 +29,34 @@ def test_empty_tool_name_is_unsafe():
 
     assert decision.safe is False
     assert decision.reason == "Tool name cannot be empty."
+
+
+def test_read_file_inside_workspace_is_safe(tmp_path: Path):
+    safety = ToolSafety(workspace=tmp_path)
+
+    call = ToolCall(
+        tool_name="read_file",
+        arguments={
+            "path": "project/hello.txt",
+        },
+    )
+
+    decision = safety.check(call)
+
+    assert decision.safe is True
+
+
+def test_read_file_outside_workspace_is_unsafe(tmp_path: Path):
+    safety = ToolSafety(workspace=tmp_path)
+
+    call = ToolCall(
+        tool_name="read_file",
+        arguments={
+            "path": "../secret.txt",
+        },
+    )
+
+    decision = safety.check(call)
+
+    assert decision.safe is False
+    assert decision.reason == "Path is outside the allowed workspace."

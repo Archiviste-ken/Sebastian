@@ -1,7 +1,9 @@
+from app.models.audit_event import AuditEvent
 from app.models.tool_call import ToolCall
 from app.models.tool_result import ToolResult
 from app.security.permissions import PermissionKernel, PermissionLevel
 from app.security.safety import SafetyDecision, ToolSafety
+from app.tools.audit import AuditRecorder
 from app.tools.definition import ToolDefinition
 from app.tools.executor import ToolExecutor
 from app.tools.registry import ToolRegistry
@@ -31,12 +33,14 @@ def make_executor(permission_level: PermissionLevel):
 
     safety = ToolSafety()
     runtime = ToolRuntime()
+    audit_recorder = AuditRecorder()
 
     return ToolExecutor(
         registry=registry,
         permission_kernel=permission_kernel,
         safety=safety,
         runtime=runtime,
+        audit_recorder=audit_recorder,
     )
 
 
@@ -89,12 +93,14 @@ def test_unknown_tool_does_not_execute():
     permission_kernel = PermissionKernel({})
     safety = ToolSafety()
     runtime = ToolRuntime()
+    audit_recorder = AuditRecorder()
 
     executor = ToolExecutor(
         registry=registry,
         permission_kernel=permission_kernel,
         safety=safety,
         runtime=runtime,
+        audit_recorder=audit_recorder,
     )
 
     call = ToolCall(
@@ -138,12 +144,14 @@ def test_unsafe_tool_call_does_not_execute():
             )
 
     runtime = ToolRuntime()
+    audit_recorder = AuditRecorder()
 
     executor = ToolExecutor(
         registry=registry,
         permission_kernel=permission_kernel,
         safety=UnsafeSafety(),
         runtime=runtime,
+        audit_recorder=audit_recorder,
     )
 
     call = ToolCall(
@@ -155,3 +163,89 @@ def test_unsafe_tool_call_does_not_execute():
 
     assert result.success is False
     assert result.error == "Unsafe tool call."
+
+
+def test_successful_execution_creates_audit_event():
+    audit_recorder = AuditRecorder()
+
+    registry = ToolRegistry()
+
+    registry.register(
+        ToolDefinition(
+            name="hello",
+            description="Say hello",
+            handler=hello,
+        )
+    )
+
+    executor = ToolExecutor(
+        registry=registry,
+        permission_kernel=PermissionKernel(
+            {
+                "hello": PermissionLevel.AUTONOMOUS,
+            }
+        ),
+        safety=ToolSafety(),
+        runtime=ToolRuntime(),
+        audit_recorder=audit_recorder,
+    )
+
+    result = executor.execute(
+        ToolCall(
+            tool_name="hello",
+            arguments={"name": "Shreyesh"},
+        )
+    )
+
+    events = audit_recorder.events()
+
+    assert isinstance(result, ToolResult)
+    assert result.success is True
+
+    assert len(events) == 1
+    assert isinstance(events[0], AuditEvent)
+    assert events[0].tool_name == "hello"
+    assert events[0].success is True
+
+
+def test_blocked_execution_creates_audit_event():
+    audit_recorder = AuditRecorder()
+
+    registry = ToolRegistry()
+
+    registry.register(
+        ToolDefinition(
+            name="hello",
+            description="Say hello",
+            handler=hello,
+        )
+    )
+
+    executor = ToolExecutor(
+        registry=registry,
+        permission_kernel=PermissionKernel(
+            {
+                "hello": PermissionLevel.BLOCKED,
+            }
+        ),
+        safety=ToolSafety(),
+        runtime=ToolRuntime(),
+        audit_recorder=audit_recorder,
+    )
+
+    result = executor.execute(
+        ToolCall(
+            tool_name="hello",
+            arguments={"name": "Shreyesh"},
+        )
+    )
+
+    events = audit_recorder.events()
+
+    assert isinstance(result, ToolResult)
+    assert result.success is False
+
+    assert len(events) == 1
+    assert events[0].tool_name == "hello"
+    assert events[0].success is False
+    assert events[0].message == "Tool is blocked."
