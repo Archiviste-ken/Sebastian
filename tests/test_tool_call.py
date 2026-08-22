@@ -1,3 +1,6 @@
+# 🧪 Tool call model test
+# Verifies the metadata for a tool invocation is captured correctly.
+
 from app.models.tool_call import ToolCall
 
 

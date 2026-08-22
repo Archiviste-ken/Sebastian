@@ -1,3 +1,7 @@
+# 🌐 FastAPI entrypoint
+# This is the public HTTP layer for Sebastian.
+# It exposes the core task API and ensures the database schema is ready at startup.
+
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -11,6 +15,7 @@ from app.models.task import Task
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # 🏗️ Ensure the SQL schema exists whenever the app starts.
     create_tables()
     yield
 
@@ -23,6 +28,7 @@ app = FastAPI(
 
 
 def get_db():
+    # 🔌 Create a per-request database session and close it afterward.
     db = SessionLocal()
 
     try:
@@ -33,6 +39,7 @@ def get_db():
 
 @app.get("/health")
 def health_check():
+    # ❤️ Lightweight liveness check for deployment or smoke testing.
     return {"status": "ok"}
 
 
@@ -41,6 +48,7 @@ def create_task(
     request: TaskCreateRequest,
     db: Session = Depends(get_db),
 ):
+    # 🧠 Turn the API request into a domain task and persist it.
     task = Task(
         id=request.id,
         goal=request.goal,
@@ -57,6 +65,7 @@ def get_task(
     task_id: str,
     db: Session = Depends(get_db),
 ):
+    # 🔎 Fetch a task by ID and return 404 if it does not exist.
     repository = TaskRepository(db)
     task = repository.get(task_id)
 

@@ -1,3 +1,6 @@
+# 🧪 Configuration test
+# Ensures default environment settings are loaded when no custom override is present.
+
 from app.models.config import load_settings
 
 

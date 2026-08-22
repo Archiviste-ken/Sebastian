@@ -1,3 +1,6 @@
+# 🧪 Plan model test
+# Validates the plan metadata and rejects invalid empty descriptions.
+
 import pytest
 from pydantic import ValidationError
 

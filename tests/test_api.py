@@ -1,3 +1,6 @@
+# 🧪 API integration tests
+# These tests exercise the public HTTP layer and verify the task lifecycle endpoints work.
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

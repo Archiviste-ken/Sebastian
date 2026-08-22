@@ -1,3 +1,6 @@
+# 🧪 Task lifecycle tests
+# Ensures the project state machine behaves as designed for planning, execution, and recovery.
+
 import pytest
 from pydantic import ValidationError
 from app.models.task import (
@@ -15,7 +18,8 @@ def test_task_defaults_to_pending():
     )
 
     assert task.status == TaskStatus.PENDING
-    
+
+
 def test_all_task_statuses_exist():
     expected_statuses = {
         "pending",
@@ -41,7 +45,8 @@ def test_task_rejects_empty_goal():
             id="task-2",
             goal="",
         )
-        
+
+
 def test_valid_transition():
     assert can_transition(
         TaskStatus.PENDING,

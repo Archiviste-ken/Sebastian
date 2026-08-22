@@ -1,3 +1,6 @@
+# 🧪 Tool registry tests
+# Verifies the registry enforces unique names, exposes tools, and lists capabilities correctly.
+
 from app.tools.definition import ToolDefinition
 from app.tools.registry import ToolRegistry
 

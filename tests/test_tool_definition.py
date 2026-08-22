@@ -1,4 +1,8 @@
+# 🧪 Tool definition tests
+# Validates the metadata and callable handler behind each registered tool.
+
 from app.tools.definition import ToolDefinition
+
 
 def hello(name: str):
     return f"Hello {name}"

@@ -1,3 +1,6 @@
+# 🧪 Execution event test
+# Confirms event metadata is captured correctly when a tool completes successfully.
+
 from datetime import datetime, timezone
 
 from app.models.execution_event import ExecutionEvent

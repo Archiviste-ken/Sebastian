@@ -1,3 +1,7 @@
+# 🧳 Repository package
+# Contains persistence abstractions for the project domain models.
+# This package is the bridge between the app's business logic and its SQLite storage.
+
 from sqlalchemy.orm import Session
 
 from app.db.models import TaskRecord

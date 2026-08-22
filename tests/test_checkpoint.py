@@ -1,3 +1,6 @@
+# 🧪 Checkpoint model test
+# Verifies a checkpoint can capture system state and preserve progress metadata.
+
 from datetime import datetime, timezone
 
 from app.models.checkpoint import Checkpoint

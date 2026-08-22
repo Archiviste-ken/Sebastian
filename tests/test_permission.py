@@ -1,3 +1,6 @@
+# 🧪 Permission model test
+# Ensures a tool can be assigned a permission level and represented as a value object.
+
 from app.models.permission import Permission, PermissionLevel
 
 

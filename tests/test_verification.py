@@ -1,3 +1,6 @@
+# 🧪 Verification model test
+# Confirms the system can store the evidence-based conclusion of a task run.
+
 from app.models.verification import Verification
 
 

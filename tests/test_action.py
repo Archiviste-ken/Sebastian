@@ -1,3 +1,6 @@
+# 🧪 Action model test
+# Verifies the action object is created correctly and rejects empty descriptions.
+
 import pytest
 from pydantic import ValidationError
 

@@ -1,3 +1,6 @@
+# 🧪 Database test
+# Validates the SQLite engine is alive and the tasks table exists.
+
 from sqlalchemy import inspect, text
 
 from app.db.database import create_tables, engine

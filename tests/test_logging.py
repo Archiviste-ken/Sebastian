@@ -1,3 +1,6 @@
+# 🧪 Logging configuration test
+# Confirms the logger emits messages after the project-specific formatting is configured.
+
 import logging
 
 from app.models.config import load_settings
@@ -15,7 +18,7 @@ def test_logging_configuration(caplog):
         logger.info("test_event")
 
     assert "test_event" in caplog.text
-    
+
 #     configure_logging()
 #         ↓
 # ⚙️ Tell logging system:
