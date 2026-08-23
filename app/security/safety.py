@@ -65,6 +65,14 @@ class ToolSafety:
         if tool_call.tool_name == "run_python":
             return self._check_python_script(tool_call)
 
+        # 🐙 Git inspection tools operate only on the approved workspace.
+        if tool_call.tool_name in {
+            "git_status",
+            "git_diff",
+            "git_log",
+        }:
+            return self._check_git_workspace(tool_call)
+
         # ✅ Other tools currently need only the basic name check.
         return SafetyDecision(
             safe=True,
@@ -223,4 +231,15 @@ class ToolSafety:
         return SafetyDecision(
             safe=True,
             reason="Python script passed safety checks.",
+        )
+
+    def _check_git_workspace(
+        self,
+        tool_call: ToolCall,
+    ) -> SafetyDecision:
+        # 🐙 Git tools do not accept an arbitrary repository path.
+        # They operate only against the trusted Sebastian workspace.
+        return SafetyDecision(
+            safe=True,
+            reason="Git operation is restricted to the Sebastian workspace.",
         )

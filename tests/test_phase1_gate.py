@@ -623,3 +623,47 @@ def test_run_python_autonomous_execution(tmp_path: Path):
     assert len(events) == 1
     assert events[0].tool_name == "run_python"
     assert events[0].success is True
+    
+def test_git_status_full_execution_pipeline():
+    registry = ToolRegistry()
+
+    registry.register(
+        ToolDefinition(
+            name="git_status",
+            description="Show the current Git working tree status.",
+            handler=lambda: git_status(Path.cwd()),
+        )
+    )
+
+    permission_kernel = PermissionKernel(
+        {
+            "git_status": PermissionLevel.AUTONOMOUS,
+        }
+    )
+
+    audit_recorder = AuditRecorder()
+
+    executor = ToolExecutor(
+        registry=registry,
+        permission_kernel=permission_kernel,
+        safety=ToolSafety(),
+        runtime=ToolRuntime(),
+        audit_recorder=audit_recorder,
+    )
+
+    result = executor.execute(
+        ToolCall(
+            tool_name="git_status",
+            arguments={},
+        )
+    )
+
+    assert result.status == ToolResultStatus.SUCCESS
+    assert result.success is True
+    assert result.data["return_code"] == 0
+
+    events = audit_recorder.events()
+
+    assert len(events) == 1
+    assert events[0].tool_name == "git_status"
+    assert events[0].success is True
