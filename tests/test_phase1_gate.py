@@ -18,6 +18,7 @@ from app.tools.definition import ToolDefinition
 from app.tools.executor import ToolExecutor
 from app.tools.registry import ToolRegistry
 from app.tools.runtime import ToolRuntime
+from app.tools.builtin.git import git_status
 
 def test_read_file_full_execution_pipeline(tmp_path: Path):
     file_path = tmp_path / "hello.txt"
@@ -30,12 +31,13 @@ def test_read_file_full_execution_pipeline(tmp_path: Path):
     registry = ToolRegistry()
 
     registry.register(
-        ToolDefinition(
-            name="read_file",
-            description="Read the contents of a text file.",
-            handler=read_file,
-        )
+    ToolDefinition(
+        name="git_status",
+        description="Show the current Git working tree status.",
+        handler=git_status,
+        uses_context=True,
     )
+)
 
     permission_kernel = PermissionKernel(
         {

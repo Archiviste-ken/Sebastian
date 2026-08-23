@@ -4,6 +4,7 @@
 from app.models.tool_result import ToolResult, ToolResultStatus
 from app.tools.definition import ToolDefinition
 from app.tools.runtime import ToolRuntime
+from pathlib import Path
 
 
 def hello(name: str):
@@ -19,7 +20,17 @@ def test_runtime_executes_tool():
 
     runtime = ToolRuntime()
 
-    result = runtime.execute(tool, "Shreyesh")
+    from app.tools.context import ExecutionContext
+
+    context = ExecutionContext(
+        workspace=Path.cwd(),
+    )
+
+    result = runtime.execute(
+        tool=tool,
+        arguments={"name": "Shreyesh"},
+        context=context,
+    )
 
     assert isinstance(result, ToolResult)
     assert result.status == ToolResultStatus.SUCCESS

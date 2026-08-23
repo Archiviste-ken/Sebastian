@@ -1,5 +1,7 @@
-import subprocess
 from pathlib import Path
+import subprocess
+
+from app.tools.context import ExecutionContext
 
 
 def _run_git(
@@ -22,22 +24,22 @@ def _run_git(
     }
 
 
-def git_status(workspace: Path) -> dict:
+def git_status(context: ExecutionContext) -> dict:
     return _run_git(
-        workspace,
+        context.workspace,
         ["status", "--short"],
     )
 
 
-def git_diff(workspace: Path) -> dict:
+def git_diff(context: ExecutionContext) -> dict:
     return _run_git(
-        workspace,
+        context.workspace,
         ["diff"],
     )
 
 
-def git_log(workspace: Path) -> dict:
+def git_log(context: ExecutionContext) -> dict:
     return _run_git(
-        workspace,
+        context.workspace,
         ["log", "--oneline", "-10"],
     )
