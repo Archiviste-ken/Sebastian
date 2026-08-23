@@ -25,6 +25,11 @@ from typing import Any
 from pydantic import BaseModel
 
 
+# 🧰 Tool call model
+# This small request object travels through the execution pipeline.
 class ToolCall(BaseModel):
+    # 🏷️ Registered name of the tool to run, such as `read_file`.
     tool_name: str
+
+    # 📦 Named values the tool handler needs, such as a file path.
     arguments: dict[str, Any] = {}
