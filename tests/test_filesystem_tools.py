@@ -1,6 +1,10 @@
 from pathlib import Path
 
-from app.tools.builtin.filesystem import list_directory, read_file
+from app.tools.builtin.filesystem import (
+    list_directory,
+    read_file,
+    write_file,
+)
 
 
 def test_read_file(tmp_path: Path):
@@ -36,3 +40,16 @@ def test_list_directory(tmp_path: Path):
         "b.txt",
         "folder",
     ]
+    
+def test_write_file(tmp_path: Path):
+    file_path = tmp_path / "hello.txt"
+
+    result = write_file(
+        str(file_path),
+        "Hello from Sebastian!",
+    )
+
+    assert result is None
+    assert file_path.read_text(encoding="utf-8") == (
+        "Hello from Sebastian!"
+    )

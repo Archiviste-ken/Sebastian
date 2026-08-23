@@ -31,12 +31,12 @@ class ToolSafety:
                 reason="Tool name cannot be empty.",
             )
 
-        if tool_call.tool_name == "read_file":
-            # 📖 File-reading tools must stay inside the allowed workspace.
-            return self._check_filesystem_path(tool_call)
-
-        if tool_call.tool_name == "list_directory":
-            # 🗂️ Directory-listing tools follow the same workspace rule.
+        if tool_call.tool_name in {
+            "read_file",
+            "list_directory",
+            "write_file",
+}:
+    # 🔒 All filesystem tools must stay inside the allowed workspace.
             return self._check_filesystem_path(tool_call)
 
         # ✅ Other tools currently need only the basic name check.
