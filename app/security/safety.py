@@ -44,7 +44,7 @@ class ToolSafety:
                 reason="Tool name cannot be empty.",
             )
 
-        # 🔒 All single-path filesystem tools use the same workspace check.
+        # 🔒 Single-path filesystem tools.
         if tool_call.tool_name in {
             "read_file",
             "list_directory",
@@ -53,13 +53,17 @@ class ToolSafety:
         }:
             return self._check_filesystem_path(tool_call)
 
-        # 🔀 move_file has TWO paths, so it needs its own validation.
+        # 🔀 move_file has TWO paths.
         if tool_call.tool_name == "move_file":
             return self._check_move_file(tool_call)
 
-        # ⌨️ run_command has a command list instead of a filesystem path.
+        # ⌨️ run_command has a command list.
         if tool_call.tool_name == "run_command":
             return self._check_run_command(tool_call)
+
+        # 🐍 run_python has a script path.
+        if tool_call.tool_name == "run_python":
+            return self._check_python_script(tool_call)
 
         # ✅ Other tools currently need only the basic name check.
         return SafetyDecision(
@@ -75,17 +79,14 @@ class ToolSafety:
         path_value = tool_call.arguments.get("path")
 
         if not isinstance(path_value, str) or not path_value.strip():
-            # ❌ Do not accept missing, blank, or non-text paths.
             return SafetyDecision(
                 safe=False,
                 reason=f"{tool_call.tool_name} requires a non-empty path.",
             )
 
-        # 🧭 Turn the text into a Path object.
         candidate = Path(path_value)
 
         if not candidate.is_absolute():
-            # 📁 Treat relative paths as relative to the approved workspace.
             candidate = self.workspace / candidate
 
         try:
@@ -95,14 +96,11 @@ class ToolSafety:
             resolved.relative_to(self.workspace)
 
         except ValueError:
-            # 🚫 `relative_to` raises ValueError when the path escaped
-            # the workspace.
             return SafetyDecision(
                 safe=False,
                 reason="Path is outside the allowed workspace.",
             )
 
-        # ✅ The final resolved path is safely contained in the workspace.
         return SafetyDecision(
             safe=True,
             reason="Path is inside the allowed workspace.",
@@ -116,21 +114,19 @@ class ToolSafety:
         source = tool_call.arguments.get("source")
         destination = tool_call.arguments.get("destination")
 
-        # ❌ Source must be a non-empty string.
         if not isinstance(source, str) or not source.strip():
             return SafetyDecision(
                 safe=False,
                 reason="move_file requires a non-empty source.",
             )
 
-        # ❌ Destination must be a non-empty string.
         if not isinstance(destination, str) or not destination.strip():
             return SafetyDecision(
                 safe=False,
                 reason="move_file requires a non-empty destination.",
             )
 
-        # 🔒 Both paths must stay inside the allowed workspace.
+        # 🔒 Both paths must remain inside the workspace.
         for path_value in (source, destination):
             candidate = Path(path_value)
 
@@ -147,7 +143,6 @@ class ToolSafety:
                     reason="Path is outside the allowed workspace.",
                 )
 
-        # ✅ Both source and destination are inside the workspace.
         return SafetyDecision(
             safe=True,
             reason="Source and destination are inside the allowed workspace.",
@@ -160,14 +155,12 @@ class ToolSafety:
         # 📥 Get the command argument.
         command = tool_call.arguments.get("command")
 
-        # ❌ Command must be a non-empty list.
         if not isinstance(command, list) or not command:
             return SafetyDecision(
                 safe=False,
                 reason="run_command requires a non-empty command list.",
             )
 
-        # ❌ Every command part must be a non-empty string.
         if not all(
             isinstance(part, str) and part.strip()
             for part in command
@@ -177,18 +170,57 @@ class ToolSafety:
                 reason="run_command arguments must be non-empty strings.",
             )
 
-        # 🔎 Extract only the executable name.
+        # 🔎 Extract the executable name.
         executable = Path(command[0]).name.lower()
 
-        # 🚫 Unknown executables are rejected.
         if executable not in ALLOWED_COMMANDS:
             return SafetyDecision(
                 safe=False,
                 reason=f"Command is not allowed: {executable}",
             )
 
-        # ✅ Executable passed the initial allowlist check.
         return SafetyDecision(
             safe=True,
             reason="Command passed safety checks.",
+        )
+
+    def _check_python_script(
+        self,
+        tool_call: ToolCall,
+    ) -> SafetyDecision:
+        # 📥 Get the script path.
+        script = tool_call.arguments.get("script")
+
+        if not isinstance(script, str) or not script.strip():
+            return SafetyDecision(
+                safe=False,
+                reason="run_python requires a non-empty script path.",
+            )
+
+        candidate = Path(script)
+
+        if not candidate.is_absolute():
+            candidate = self.workspace / candidate
+
+        try:
+            # 🔍 Resolve the path and ensure it stays inside the workspace.
+            resolved = candidate.resolve()
+            resolved.relative_to(self.workspace)
+
+        except ValueError:
+            return SafetyDecision(
+                safe=False,
+                reason="Python script is outside the allowed workspace.",
+            )
+
+        # 🐍 Only Python scripts are accepted.
+        if resolved.suffix.lower() != ".py":
+            return SafetyDecision(
+                safe=False,
+                reason="run_python requires a .py script.",
+            )
+
+        return SafetyDecision(
+            safe=True,
+            reason="Python script passed safety checks.",
         )

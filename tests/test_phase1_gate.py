@@ -1,9 +1,11 @@
 from pathlib import Path
 
 from app.models.tool_call import ToolCall
+from app.models.tool_result import ToolResultStatus
 from app.security.permissions import PermissionKernel, PermissionLevel
 from app.security.safety import ToolSafety
 from app.tools.audit import AuditRecorder
+from app.tools.builtin.command import run_command
 from app.tools.builtin.filesystem import (
     create_directory,
     list_directory,
@@ -11,11 +13,11 @@ from app.tools.builtin.filesystem import (
     read_file,
     write_file,
 )
+from app.tools.builtin.python import run_python
 from app.tools.definition import ToolDefinition
 from app.tools.executor import ToolExecutor
 from app.tools.registry import ToolRegistry
 from app.tools.runtime import ToolRuntime
-
 
 def test_read_file_full_execution_pipeline(tmp_path: Path):
     file_path = tmp_path / "hello.txt"
@@ -510,4 +512,114 @@ def test_run_command_autonomous_execution():
 
     assert len(events) == 1
     assert events[0].tool_name == "run_command"
+    assert events[0].success is True
+
+
+def test_run_python_requires_approval(tmp_path: Path):
+    script = tmp_path / "should_not_run.py"
+
+    script.write_text(
+        "raise SystemExit('PYTHON SHOULD NOT RUN')",
+        encoding="utf-8",
+    )
+
+    registry = ToolRegistry()
+
+    registry.register(
+        ToolDefinition(
+            name="run_python",
+            description="Run a Python script.",
+            handler=run_python,
+        )
+    )
+
+    permission_kernel = PermissionKernel(
+        {
+            "run_python": PermissionLevel.APPROVAL,
+        }
+    )
+
+    audit_recorder = AuditRecorder()
+
+    executor = ToolExecutor(
+        registry=registry,
+        permission_kernel=permission_kernel,
+        safety=ToolSafety(workspace=tmp_path),
+        runtime=ToolRuntime(),
+        audit_recorder=audit_recorder,
+    )
+
+    result = executor.execute(
+        ToolCall(
+            tool_name="run_python",
+            arguments={
+                "script": str(script),
+            },
+        )
+    )
+
+    assert result.status == ToolResultStatus.WAITING_APPROVAL
+    assert result.success is False
+    assert result.error == "User approval is required."
+
+    events = audit_recorder.events()
+
+    assert len(events) == 1
+    assert events[0].tool_name == "run_python"
+    assert events[0].success is False
+
+def test_run_python_autonomous_execution(tmp_path: Path):
+    script = tmp_path / "hello.py"
+
+    script.write_text(
+        "print('Hello from Sebastian Python!')",
+        encoding="utf-8",
+    )
+
+    registry = ToolRegistry()
+
+    registry.register(
+        ToolDefinition(
+            name="run_python",
+            description="Run a Python script.",
+            handler=run_python,
+        )
+    )
+
+    permission_kernel = PermissionKernel(
+        {
+            "run_python": PermissionLevel.AUTONOMOUS,
+        }
+    )
+
+    audit_recorder = AuditRecorder()
+
+    executor = ToolExecutor(
+        registry=registry,
+        permission_kernel=permission_kernel,
+        safety=ToolSafety(workspace=tmp_path),
+        runtime=ToolRuntime(),
+        audit_recorder=audit_recorder,
+    )
+
+    result = executor.execute(
+        ToolCall(
+            tool_name="run_python",
+            arguments={
+                "script": str(script),
+            },
+        )
+    )
+
+    assert result.status == ToolResultStatus.SUCCESS
+    assert result.success is True
+    assert result.data["return_code"] == 0
+    assert result.data["stdout"].strip() == (
+        "Hello from Sebastian Python!"
+    )
+
+    events = audit_recorder.events()
+
+    assert len(events) == 1
+    assert events[0].tool_name == "run_python"
     assert events[0].success is True
