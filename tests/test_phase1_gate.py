@@ -4,7 +4,13 @@ from app.models.tool_call import ToolCall
 from app.security.permissions import PermissionKernel, PermissionLevel
 from app.security.safety import ToolSafety
 from app.tools.audit import AuditRecorder
-from app.tools.builtin.filesystem import read_file
+from app.tools.builtin.filesystem import (
+    create_directory,
+    list_directory,
+    move_file,
+    read_file,
+    write_file,
+)
 from app.tools.definition import ToolDefinition
 from app.tools.executor import ToolExecutor
 from app.tools.registry import ToolRegistry
@@ -283,3 +289,225 @@ def test_move_file_requires_approval(tmp_path: Path):
     assert len(events) == 1
     assert events[0].tool_name == "move_file"
     assert events[0].success is False
+    
+    
+def test_move_file_autonomous_execution(tmp_path: Path):
+    source = tmp_path / "draft.txt"
+    destination = tmp_path / "final.txt"
+
+    source.write_text(
+        "Important content",
+        encoding="utf-8",
+    )
+
+    registry = ToolRegistry()
+
+    registry.register(
+        ToolDefinition(
+            name="move_file",
+            description="Move a file to another path.",
+            handler=move_file,
+        )
+    )
+
+    permission_kernel = PermissionKernel(
+        {
+            "move_file": PermissionLevel.AUTONOMOUS,
+        }
+    )
+
+    audit_recorder = AuditRecorder()
+
+    executor = ToolExecutor(
+        registry=registry,
+        permission_kernel=permission_kernel,
+        safety=ToolSafety(workspace=tmp_path),
+        runtime=ToolRuntime(),
+        audit_recorder=audit_recorder,
+    )
+
+    result = executor.execute(
+        ToolCall(
+            tool_name="move_file",
+            arguments={
+                "source": str(source),
+                "destination": str(destination),
+            },
+        )
+    )
+
+    assert result.success is True
+
+    assert source.exists() is False
+    assert destination.exists() is True
+
+    assert destination.read_text(encoding="utf-8") == (
+        "Important content"
+    )
+
+    events = audit_recorder.events()
+
+    assert len(events) == 1
+    assert events[0].tool_name == "move_file"
+    assert events[0].success is True
+    
+    
+def test_run_command_requires_approval():
+    from app.tools.builtin.command import run_command
+
+    registry = ToolRegistry()
+
+    registry.register(
+        ToolDefinition(
+            name="run_command",
+            description="Run an approved command.",
+            handler=run_command,
+        )
+    )
+
+    permission_kernel = PermissionKernel(
+        {
+            "run_command": PermissionLevel.APPROVAL,
+        }
+    )
+
+    audit_recorder = AuditRecorder()
+
+    executor = ToolExecutor(
+        registry=registry,
+        permission_kernel=permission_kernel,
+        safety=ToolSafety(),
+        runtime=ToolRuntime(),
+        audit_recorder=audit_recorder,
+    )
+
+    result = executor.execute(
+        ToolCall(
+            tool_name="run_command",
+            arguments={
+                "command": [
+                    "python",
+                    "-c",
+                    "raise SystemExit('SHOULD NOT RUN')",
+                ],
+            },
+        )
+    )
+
+    assert result.success is False
+    assert result.error == "User approval is required."
+
+    events = audit_recorder.events()
+
+    assert len(events) == 1
+    assert events[0].tool_name == "run_command"
+    assert events[0].success is False
+
+def test_run_command_unknown_executable_is_rejected():
+    from app.tools.builtin.command import run_command
+
+    registry = ToolRegistry()
+
+    registry.register(
+        ToolDefinition(
+            name="run_command",
+            description="Run an approved command.",
+            handler=run_command,
+        )
+    )
+
+    permission_kernel = PermissionKernel(
+        {
+            "run_command": PermissionLevel.AUTONOMOUS,
+        }
+    )
+
+    audit_recorder = AuditRecorder()
+
+    executor = ToolExecutor(
+        registry=registry,
+        permission_kernel=permission_kernel,
+        safety=ToolSafety(),
+        runtime=ToolRuntime(),
+        audit_recorder=audit_recorder,
+    )
+
+    result = executor.execute(
+        ToolCall(
+            tool_name="run_command",
+            arguments={
+                "command": [
+                    "definitely_not_allowed",
+                    "whatever",
+                ],
+            },
+        )
+    )
+
+    assert result.success is False
+    assert result.error == (
+        "Command is not allowed: definitely_not_allowed"
+    )
+
+    events = audit_recorder.events()
+
+    assert len(events) == 1
+    assert events[0].tool_name == "run_command"
+    assert events[0].success is False
+    
+    
+def test_run_command_autonomous_execution():
+    from app.tools.builtin.command import run_command
+
+    registry = ToolRegistry()
+
+    registry.register(
+        ToolDefinition(
+            name="run_command",
+            description="Run an approved command.",
+            handler=run_command,
+        )
+    )
+
+    permission_kernel = PermissionKernel(
+        {
+            "run_command": PermissionLevel.AUTONOMOUS,
+        }
+    )
+
+    audit_recorder = AuditRecorder()
+
+    executor = ToolExecutor(
+        registry=registry,
+        permission_kernel=permission_kernel,
+        safety=ToolSafety(),
+        runtime=ToolRuntime(),
+        audit_recorder=audit_recorder,
+    )
+
+    result = executor.execute(
+        ToolCall(
+            tool_name="run_command",
+            arguments={
+                "command": [
+                    "python",
+                    "-c",
+                    "print('Sebastian command works')",
+                ],
+            },
+        )
+    )
+
+    assert result.success is True
+
+    assert result.data["return_code"] == 0
+    assert result.data["stdout"].strip() == (
+        "Sebastian command works"
+    )
+    assert result.data["stderr"] == ""
+
+    events = audit_recorder.events()
+
+    assert len(events) == 1
+    assert events[0].tool_name == "run_command"
+    assert events[0].success is True

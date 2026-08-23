@@ -1,7 +1,7 @@
 # 🧪 Tool runtime tests
 # Verifies the runtime normalizes both successful tool calls and failures into a consistent result object.
 
-from app.models.tool_result import ToolResult
+from app.models.tool_result import ToolResult, ToolResultStatus
 from app.tools.definition import ToolDefinition
 from app.tools.runtime import ToolRuntime
 
@@ -22,6 +22,7 @@ def test_runtime_executes_tool():
     result = runtime.execute(tool, "Shreyesh")
 
     assert isinstance(result, ToolResult)
+    assert result.status == ToolResultStatus.SUCCESS
     assert result.success is True
     assert result.data == "Hello Shreyesh"
     assert result.error is None
@@ -42,6 +43,7 @@ def test_runtime_converts_exception_to_failure():
 
     result = runtime.execute(tool)
 
+    assert result.status == ToolResultStatus.FAILED
     assert result.success is False
     assert result.data is None
     assert result.error == "Something went wrong"

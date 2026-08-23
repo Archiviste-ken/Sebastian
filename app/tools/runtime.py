@@ -4,7 +4,7 @@
 
 from typing import Any
 
-from app.models.tool_result import ToolResult
+from app.models.tool_result import ToolResult, ToolResultStatus
 from app.tools.definition import ToolDefinition
 
 
@@ -15,19 +15,16 @@ class ToolRuntime:
         *args: Any,
         **kwargs: Any,
     ) -> ToolResult:
-        # 🏃 Attempt to run the tool's handler.
         try:
             result = tool.handler(*args, **kwargs)
 
-            # ✅ Return a success payload with the tool's data.
             return ToolResult(
-                success=True,
+                status=ToolResultStatus.SUCCESS,
                 data=result,
             )
 
-        # ❌ Catch any exception and normalize it into a failure result.
         except Exception as exc:
             return ToolResult(
-                success=False,
+                status=ToolResultStatus.FAILED,
                 error=str(exc),
             )

@@ -76,3 +76,50 @@ def test_move_file_destination_outside_workspace_is_unsafe(tmp_path):
 
     assert decision.safe is False
     assert decision.reason == "Path is outside the allowed workspace."
+    
+    
+def test_run_command_allowed_executable():
+    safety = ToolSafety()
+
+    call = ToolCall(
+        tool_name="run_command",
+        arguments={
+            "command": ["python", "-c", "print('hello')"],
+        },
+    )
+
+    decision = safety.check(call)
+
+    assert decision.safe is True
+    
+def test_run_command_blocks_unknown_executable():
+    safety = ToolSafety()
+
+    call = ToolCall(
+        tool_name="run_command",
+        arguments={
+            "command": ["definitely_not_allowed", "--do-something"],
+        },
+    )
+
+    decision = safety.check(call)
+
+    assert decision.safe is False
+    assert decision.reason == (
+        "Command is not allowed: definitely_not_allowed"
+    )
+    
+def test_run_command_requires_command_list():
+    safety = ToolSafety()
+
+    call = ToolCall(
+        tool_name="run_command",
+        arguments={},
+    )
+
+    decision = safety.check(call)
+
+    assert decision.safe is False
+    assert decision.reason == (
+        "run_command requires a non-empty command list."
+    )

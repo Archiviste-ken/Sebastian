@@ -1,6 +1,6 @@
 from app.models.audit_event import AuditEvent
 from app.models.tool_call import ToolCall
-from app.models.tool_result import ToolResult
+from app.models.tool_result import ToolResult, ToolResultStatus
 from app.security.permissions import PermissionKernel, PermissionLevel
 from app.security.safety import SafetyDecision, ToolSafety
 from app.tools.audit import AuditRecorder
@@ -55,11 +55,12 @@ def test_autonomous_tool_executes():
     result = executor.execute(call)
 
     assert isinstance(result, ToolResult)
+    assert result.status == ToolResultStatus.SUCCESS
     assert result.success is True
     assert result.data == "Hello Shreyesh"
 
 
-def test_approval_tool_does_not_execute():
+def test_approval_tool_waits_for_approval():
     executor = make_executor(PermissionLevel.APPROVAL)
 
     call = ToolCall(
@@ -69,6 +70,7 @@ def test_approval_tool_does_not_execute():
 
     result = executor.execute(call)
 
+    assert result.status == ToolResultStatus.WAITING_APPROVAL
     assert result.success is False
     assert result.error == "User approval is required."
 
@@ -83,6 +85,7 @@ def test_blocked_tool_does_not_execute():
 
     result = executor.execute(call)
 
+    assert result.status == ToolResultStatus.BLOCKED
     assert result.success is False
     assert result.error == "Tool is blocked."
 
@@ -110,6 +113,7 @@ def test_unknown_tool_does_not_execute():
 
     result = executor.execute(call)
 
+    assert result.status == ToolResultStatus.FAILED
     assert result.success is False
     assert "Tool not found" in result.error
 
@@ -161,6 +165,7 @@ def test_unsafe_tool_call_does_not_execute():
 
     result = executor.execute(call)
 
+    assert result.status == ToolResultStatus.FAILED
     assert result.success is False
     assert result.error == "Unsafe tool call."
 
@@ -199,7 +204,7 @@ def test_successful_execution_creates_audit_event():
 
     events = audit_recorder.events()
 
-    assert isinstance(result, ToolResult)
+    assert result.status == ToolResultStatus.SUCCESS
     assert result.success is True
 
     assert len(events) == 1
@@ -242,7 +247,7 @@ def test_blocked_execution_creates_audit_event():
 
     events = audit_recorder.events()
 
-    assert isinstance(result, ToolResult)
+    assert result.status == ToolResultStatus.BLOCKED
     assert result.success is False
 
     assert len(events) == 1

@@ -4,7 +4,7 @@
 
 from app.models.audit_event import AuditEvent
 from app.models.tool_call import ToolCall
-from app.models.tool_result import ToolResult
+from app.models.tool_result import ToolResult, ToolResultStatus
 from app.security.permissions import PermissionKernel
 from app.security.safety import ToolSafety
 from app.tools.audit import AuditRecorder
@@ -21,7 +21,6 @@ class ToolExecutor:
         runtime: ToolRuntime,
         audit_recorder: AuditRecorder,
     ):
-        # 🧩 Keep the collaborators together so one place controls the full flow.
         self.registry = registry
         self.permission_kernel = permission_kernel
         self.safety = safety
@@ -34,7 +33,6 @@ class ToolExecutor:
         success: bool,
         message: str,
     ) -> None:
-        # 📝 Store a small, permanent record for both successes and failures.
         self.audit_recorder.record(
             AuditEvent(
                 tool_name=tool_name,
@@ -44,11 +42,11 @@ class ToolExecutor:
         )
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
-        # 1️⃣ Find the requested tool before doing any other work.
+        # 🧰 Step 1: resolve the requested tool.
         try:
             tool = self.registry.get(tool_call.tool_name)
+
         except KeyError as exc:
-            # ❌ Unknown tools cannot run, but the attempted call is still recorded.
             message = str(exc)
 
             self._record(
@@ -58,15 +56,18 @@ class ToolExecutor:
             )
 
             return ToolResult(
-                success=False,
+                status=ToolResultStatus.FAILED,
                 error=message,
             )
 
-        # 2️⃣ Check whether this tool can run automatically, needs approval, or is blocked.
-        decision = self.permission_kernel.check(tool_call.tool_name)
+        # 🛡️ Step 2: check permission.
+        decision = self.permission_kernel.check(
+            tool_call.tool_name
+        )
 
+        # 🟡 Approval means execution has NOT failed.
+        # It is waiting for authorization.
         if decision.requires_approval:
-            # 🙋 Stop here until a person has approved the action.
             self._record(
                 tool_name=tool_call.tool_name,
                 success=False,
@@ -74,12 +75,12 @@ class ToolExecutor:
             )
 
             return ToolResult(
-                success=False,
+                status=ToolResultStatus.WAITING_APPROVAL,
                 error=decision.reason,
             )
 
+        # 🔴 Blocked means the system explicitly rejects execution.
         if not decision.allowed:
-            # 🚫 A blocked tool never reaches the safety check or its handler.
             self._record(
                 tool_name=tool_call.tool_name,
                 success=False,
@@ -87,15 +88,14 @@ class ToolExecutor:
             )
 
             return ToolResult(
-                success=False,
+                status=ToolResultStatus.BLOCKED,
                 error=decision.reason,
             )
 
-        # 3️⃣ Validate the call itself, such as ensuring a file stays in the workspace.
+        # 🔒 Step 3: safety checks.
         safety_decision = self.safety.check(tool_call)
 
         if not safety_decision.safe:
-            # 🛡️ Reject unsafe arguments before anything can change or read data.
             self._record(
                 tool_name=tool_call.tool_name,
                 success=False,
@@ -103,24 +103,23 @@ class ToolExecutor:
             )
 
             return ToolResult(
-                success=False,
+                status=ToolResultStatus.FAILED,
                 error=safety_decision.reason,
             )
 
-        # 4️⃣ The call passed all gates, so run the tool with its supplied arguments.
+        # ⚙️ Step 4: actually execute the tool.
         result = self.runtime.execute(
             tool,
             **tool_call.arguments,
         )
 
-        # 📣 Turn the result into a clear audit message.
+        # 📝 Step 5: audit the actual execution outcome.
         message = (
             "Tool executed successfully."
             if result.success
             else result.error or "Tool execution failed."
         )
 
-        # ✅/❌ Always finish by recording what actually happened.
         self._record(
             tool_name=tool_call.tool_name,
             success=result.success,

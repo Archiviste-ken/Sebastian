@@ -8,6 +8,17 @@ from pathlib import Path
 from app.models.tool_call import ToolCall
 
 
+# 🔒 Only these executables are currently allowed by the command safety policy.
+ALLOWED_COMMANDS = {
+    "python",
+    "python.exe",
+    "pytest",
+    "pytest.exe",
+    "git",
+    "git.exe",
+}
+
+
 @dataclass(frozen=True)
 class SafetyDecision:
     # ✅ True means the call can continue to execution.
@@ -45,6 +56,10 @@ class ToolSafety:
         # 🔀 move_file has TWO paths, so it needs its own validation.
         if tool_call.tool_name == "move_file":
             return self._check_move_file(tool_call)
+
+        # ⌨️ run_command has a command list instead of a filesystem path.
+        if tool_call.tool_name == "run_command":
+            return self._check_run_command(tool_call)
 
         # ✅ Other tools currently need only the basic name check.
         return SafetyDecision(
@@ -136,4 +151,44 @@ class ToolSafety:
         return SafetyDecision(
             safe=True,
             reason="Source and destination are inside the allowed workspace.",
+        )
+
+    def _check_run_command(
+        self,
+        tool_call: ToolCall,
+    ) -> SafetyDecision:
+        # 📥 Get the command argument.
+        command = tool_call.arguments.get("command")
+
+        # ❌ Command must be a non-empty list.
+        if not isinstance(command, list) or not command:
+            return SafetyDecision(
+                safe=False,
+                reason="run_command requires a non-empty command list.",
+            )
+
+        # ❌ Every command part must be a non-empty string.
+        if not all(
+            isinstance(part, str) and part.strip()
+            for part in command
+        ):
+            return SafetyDecision(
+                safe=False,
+                reason="run_command arguments must be non-empty strings.",
+            )
+
+        # 🔎 Extract only the executable name.
+        executable = Path(command[0]).name.lower()
+
+        # 🚫 Unknown executables are rejected.
+        if executable not in ALLOWED_COMMANDS:
+            return SafetyDecision(
+                safe=False,
+                reason=f"Command is not allowed: {executable}",
+            )
+
+        # ✅ Executable passed the initial allowlist check.
+        return SafetyDecision(
+            safe=True,
+            reason="Command passed safety checks.",
         )
