@@ -19,6 +19,7 @@ from app.tools.executor import ToolExecutor
 from app.tools.registry import ToolRegistry
 from app.tools.runtime import ToolRuntime
 from app.tools.builtin.git import git_status
+from app.tools.context import ExecutionContext
 
 def test_read_file_full_execution_pipeline(tmp_path: Path):
     file_path = tmp_path / "hello.txt"
@@ -31,13 +32,12 @@ def test_read_file_full_execution_pipeline(tmp_path: Path):
     registry = ToolRegistry()
 
     registry.register(
-    ToolDefinition(
-        name="git_status",
-        description="Show the current Git working tree status.",
-        handler=git_status,
-        uses_context=True,
+        ToolDefinition(
+            name="read_file",
+            description="Read the contents of a text file.",
+            handler=read_file,
+        )
     )
-)
 
     permission_kernel = PermissionKernel(
         {
@@ -64,6 +64,7 @@ def test_read_file_full_execution_pipeline(tmp_path: Path):
         )
     )
 
+    assert result.status == ToolResultStatus.SUCCESS
     assert result.success is True
     assert result.data == "Hello from Sebastian!"
 
@@ -627,13 +628,18 @@ def test_run_python_autonomous_execution(tmp_path: Path):
     assert events[0].success is True
     
 def test_git_status_full_execution_pipeline():
+    context = ExecutionContext(
+        workspace=Path.cwd(),
+    )
+
     registry = ToolRegistry()
 
     registry.register(
         ToolDefinition(
             name="git_status",
             description="Show the current Git working tree status.",
-            handler=lambda: git_status(Path.cwd()),
+            handler=git_status,
+            uses_context=True,
         )
     )
 
@@ -648,9 +654,10 @@ def test_git_status_full_execution_pipeline():
     executor = ToolExecutor(
         registry=registry,
         permission_kernel=permission_kernel,
-        safety=ToolSafety(),
+        safety=ToolSafety(workspace=context.workspace),
         runtime=ToolRuntime(),
         audit_recorder=audit_recorder,
+        context=context,
     )
 
     result = executor.execute(
