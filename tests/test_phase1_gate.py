@@ -174,3 +174,54 @@ def test_read_file_outside_workspace_is_rejected(tmp_path: Path):
     assert len(events) == 1
     assert events[0].tool_name == "read_file"
     assert events[0].success is False
+    
+def test_create_directory_requires_approval(tmp_path: Path):
+    directory_path = tmp_path / "data" / "reports"
+
+    registry = ToolRegistry()
+
+    registry.register(
+        ToolDefinition(
+            name="create_directory",
+            description="Create a directory.",
+            handler=create_directory,
+        )
+    )
+
+    permission_kernel = PermissionKernel(
+        {
+            "create_directory": PermissionLevel.APPROVAL,
+        }
+    )
+
+    audit_recorder = AuditRecorder()
+
+    executor = ToolExecutor(
+        registry=registry,
+        permission_kernel=permission_kernel,
+        safety=ToolSafety(workspace=tmp_path),
+        runtime=ToolRuntime(),
+        audit_recorder=audit_recorder,
+    )
+
+    result = executor.execute(
+        ToolCall(
+            tool_name="create_directory",
+            arguments={
+                "path": str(directory_path),
+            },
+        )
+    )
+
+    assert result.success is False
+    assert result.error == "User approval is required."
+
+    # 🚨 Most important:
+    # Permission must prevent the side effect.
+    assert directory_path.exists() is False
+
+    events = audit_recorder.events()
+
+    assert len(events) == 1
+    assert events[0].tool_name == "create_directory"
+    assert events[0].success is False

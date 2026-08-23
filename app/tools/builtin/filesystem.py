@@ -36,3 +36,10 @@ def write_file(path: str, content: str) -> None:
         content,
         encoding="utf-8",
     )
+
+
+def create_directory(path: str) -> None:
+    Path(path).mkdir(
+        parents=True,
+        exist_ok=True,
+    )

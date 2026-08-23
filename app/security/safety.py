@@ -35,6 +35,7 @@ class ToolSafety:
             "read_file",
             "list_directory",
             "write_file",
+            "create_directory",
 }:
     # 🔒 All filesystem tools must stay inside the allowed workspace.
             return self._check_filesystem_path(tool_call)
