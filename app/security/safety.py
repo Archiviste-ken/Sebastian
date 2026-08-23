@@ -12,13 +12,15 @@ from app.models.tool_call import ToolCall
 class SafetyDecision:
     # ✅ True means the call can continue to execution.
     safe: bool
+
     # 💬 Short explanation that can be shown in a result or audit record.
     reason: str
 
 
 class ToolSafety:
     def __init__(self, workspace: Path | None = None):
-        # 📍 Resolve once so every later path comparison uses the same absolute folder.
+        # 📍 Resolve once so every later path comparison uses the same
+        # absolute folder.
         self.workspace = (
             workspace if workspace is not None else Path.cwd()
         ).resolve()
@@ -31,14 +33,18 @@ class ToolSafety:
                 reason="Tool name cannot be empty.",
             )
 
+        # 🔒 All single-path filesystem tools use the same workspace check.
         if tool_call.tool_name in {
             "read_file",
             "list_directory",
             "write_file",
             "create_directory",
-}:
-    # 🔒 All filesystem tools must stay inside the allowed workspace.
+        }:
             return self._check_filesystem_path(tool_call)
+
+        # 🔀 move_file has TWO paths, so it needs its own validation.
+        if tool_call.tool_name == "move_file":
+            return self._check_move_file(tool_call)
 
         # ✅ Other tools currently need only the basic name check.
         return SafetyDecision(
@@ -50,7 +56,7 @@ class ToolSafety:
         self,
         tool_call: ToolCall,
     ) -> SafetyDecision:
-        # 📥 Read the common `path` argument used by filesystem tools.
+        # 📥 Read the common `path` argument used by single-path tools.
         path_value = tool_call.arguments.get("path")
 
         if not isinstance(path_value, str) or not path_value.strip():
@@ -60,7 +66,7 @@ class ToolSafety:
                 reason=f"{tool_call.tool_name} requires a non-empty path.",
             )
 
-        # 🧭 Turn the text into a path object so Python can resolve it safely.
+        # 🧭 Turn the text into a Path object.
         candidate = Path(path_value)
 
         if not candidate.is_absolute():
@@ -68,11 +74,14 @@ class ToolSafety:
             candidate = self.workspace / candidate
 
         try:
-            # 🔍 Resolve `..` and symlinks, then prove the path remains inside the workspace.
+            # 🔍 Resolve `..` and symlinks, then prove the path remains
+            # inside the workspace.
             resolved = candidate.resolve()
             resolved.relative_to(self.workspace)
+
         except ValueError:
-            # 🚫 `relative_to` raises ValueError when the path escaped the workspace.
+            # 🚫 `relative_to` raises ValueError when the path escaped
+            # the workspace.
             return SafetyDecision(
                 safe=False,
                 reason="Path is outside the allowed workspace.",
@@ -82,4 +91,49 @@ class ToolSafety:
         return SafetyDecision(
             safe=True,
             reason="Path is inside the allowed workspace.",
+        )
+
+    def _check_move_file(
+        self,
+        tool_call: ToolCall,
+    ) -> SafetyDecision:
+        # 📥 move_file has two paths instead of one.
+        source = tool_call.arguments.get("source")
+        destination = tool_call.arguments.get("destination")
+
+        # ❌ Source must be a non-empty string.
+        if not isinstance(source, str) or not source.strip():
+            return SafetyDecision(
+                safe=False,
+                reason="move_file requires a non-empty source.",
+            )
+
+        # ❌ Destination must be a non-empty string.
+        if not isinstance(destination, str) or not destination.strip():
+            return SafetyDecision(
+                safe=False,
+                reason="move_file requires a non-empty destination.",
+            )
+
+        # 🔒 Both paths must stay inside the allowed workspace.
+        for path_value in (source, destination):
+            candidate = Path(path_value)
+
+            if not candidate.is_absolute():
+                candidate = self.workspace / candidate
+
+            try:
+                resolved = candidate.resolve()
+                resolved.relative_to(self.workspace)
+
+            except ValueError:
+                return SafetyDecision(
+                    safe=False,
+                    reason="Path is outside the allowed workspace.",
+                )
+
+        # ✅ Both source and destination are inside the workspace.
+        return SafetyDecision(
+            safe=True,
+            reason="Source and destination are inside the allowed workspace.",
         )

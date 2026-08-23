@@ -43,3 +43,7 @@ def create_directory(path: str) -> None:
         parents=True,
         exist_ok=True,
     )
+
+
+def move_file(source: str, destination: str) -> None:
+    Path(source).rename(destination)

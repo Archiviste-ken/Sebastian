@@ -3,6 +3,7 @@ from pathlib import Path
 from app.tools.builtin.filesystem import (
     create_directory,
     list_directory,
+    move_file,
     read_file,
     write_file,
 )
@@ -62,3 +63,22 @@ def test_create_directory(tmp_path: Path):
 
     assert result is None
     assert directory_path.is_dir()
+    
+def test_move_file(tmp_path: Path):
+    source = tmp_path / "draft.txt"
+    destination = tmp_path / "archive.txt"
+
+    source.write_text(
+        "Draft content",
+        encoding="utf-8",
+    )
+
+    result = move_file(
+        str(source),
+        str(destination),
+    )
+
+    assert result is None
+    assert source.exists() is False
+    assert destination.exists() is True
+    assert destination.read_text(encoding="utf-8") == "Draft content"

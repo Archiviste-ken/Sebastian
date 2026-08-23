@@ -225,3 +225,61 @@ def test_create_directory_requires_approval(tmp_path: Path):
     assert len(events) == 1
     assert events[0].tool_name == "create_directory"
     assert events[0].success is False
+    
+def test_move_file_requires_approval(tmp_path: Path):
+    source = tmp_path / "draft.txt"
+    destination = tmp_path / "final.txt"
+
+    source.write_text(
+        "Important draft",
+        encoding="utf-8",
+    )
+
+    registry = ToolRegistry()
+
+    registry.register(
+        ToolDefinition(
+            name="move_file",
+            description="Move a file to another path.",
+            handler=move_file,
+        )
+    )
+
+    permission_kernel = PermissionKernel(
+        {
+            "move_file": PermissionLevel.APPROVAL,
+        }
+    )
+
+    audit_recorder = AuditRecorder()
+
+    executor = ToolExecutor(
+        registry=registry,
+        permission_kernel=permission_kernel,
+        safety=ToolSafety(workspace=tmp_path),
+        runtime=ToolRuntime(),
+        audit_recorder=audit_recorder,
+    )
+
+    result = executor.execute(
+        ToolCall(
+            tool_name="move_file",
+            arguments={
+                "source": str(source),
+                "destination": str(destination),
+            },
+        )
+    )
+
+    assert result.success is False
+    assert result.error == "User approval is required."
+
+    # 🛑 The move must NOT have happened.
+    assert source.exists() is True
+    assert destination.exists() is False
+
+    events = audit_recorder.events()
+
+    assert len(events) == 1
+    assert events[0].tool_name == "move_file"
+    assert events[0].success is False

@@ -60,3 +60,19 @@ def test_read_file_outside_workspace_is_unsafe(tmp_path: Path):
 
     assert decision.safe is False
     assert decision.reason == "Path is outside the allowed workspace."
+    
+def test_move_file_destination_outside_workspace_is_unsafe(tmp_path):
+    safety = ToolSafety(workspace=tmp_path)
+
+    call = ToolCall(
+        tool_name="move_file",
+        arguments={
+            "source": "draft.txt",
+            "destination": "../outside.txt",
+        },
+    )
+
+    decision = safety.check(call)
+
+    assert decision.safe is False
+    assert decision.reason == "Path is outside the allowed workspace."
