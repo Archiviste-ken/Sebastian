@@ -8,6 +8,7 @@ from app.tools.definition import ToolDefinition
 from app.tools.executor import ToolExecutor
 from app.tools.registry import ToolRegistry
 from app.tools.runtime import ToolRuntime
+from pathlib import Path
 
 
 def hello(name: str):

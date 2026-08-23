@@ -1,10 +1,12 @@
 # 🧪 Tool runtime tests
 # Verifies the runtime normalizes both successful tool calls and failures into a consistent result object.
 
+from pathlib import Path
+
 from app.models.tool_result import ToolResult, ToolResultStatus
+from app.tools.context import ExecutionContext
 from app.tools.definition import ToolDefinition
 from app.tools.runtime import ToolRuntime
-from pathlib import Path
 
 
 def hello(name: str):
@@ -20,15 +22,15 @@ def test_runtime_executes_tool():
 
     runtime = ToolRuntime()
 
-    from app.tools.context import ExecutionContext
-
     context = ExecutionContext(
         workspace=Path.cwd(),
     )
 
     result = runtime.execute(
         tool=tool,
-        arguments={"name": "Shreyesh"},
+        arguments={
+            "name": "Shreyesh",
+        },
         context=context,
     )
 
@@ -52,7 +54,15 @@ def test_runtime_converts_exception_to_failure():
 
     runtime = ToolRuntime()
 
-    result = runtime.execute(tool)
+    context = ExecutionContext(
+        workspace=Path.cwd(),
+    )
+
+    result = runtime.execute(
+        tool=tool,
+        arguments={},
+        context=context,
+    )
 
     assert result.status == ToolResultStatus.FAILED
     assert result.success is False

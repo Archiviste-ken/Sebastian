@@ -13,6 +13,8 @@ def _run_git(
         cwd=workspace,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         shell=False,
         check=False,
     )

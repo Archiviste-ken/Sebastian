@@ -1,6 +1,8 @@
 # 🚦 Tool execution coordinator
 # This class runs a tool only after checking that it exists, is permitted,
 # and is safe. Every outcome is saved to the audit trail.
+from pathlib import Path
+
 from app.models.audit_event import AuditEvent
 from app.models.tool_call import ToolCall
 from app.models.tool_result import ToolResult, ToolResultStatus
@@ -28,11 +30,18 @@ class ToolExecutor:
         self.runtime = runtime
         self.audit_recorder = audit_recorder
 
-        # 🔒 If no context is explicitly supplied, derive it from the
-        # already-trusted Safety workspace.
-        self.context = context or ExecutionContext(
-            workspace=self.safety.workspace,
-        )
+        if context is not None:
+            self.context = context
+        else:
+            workspace = getattr(
+                self.safety,
+                "workspace",
+                Path.cwd(),
+            )
+
+            self.context = ExecutionContext(
+                workspace=workspace,
+            )
 
     def _record(
         self,
@@ -49,7 +58,6 @@ class ToolExecutor:
         )
 
     def execute(self, tool_call: ToolCall) -> ToolResult:
-        # 🧰 1. Resolve the requested tool.
         try:
             tool = self.registry.get(tool_call.tool_name)
 
@@ -67,9 +75,8 @@ class ToolExecutor:
                 error=message,
             )
 
-        # 🛡️ 2. Permission check.
         decision = self.permission_kernel.check(
-            tool_call.tool_name
+            tool_call.tool_name,
         )
 
         if decision.requires_approval:
@@ -96,7 +103,6 @@ class ToolExecutor:
                 error=decision.reason,
             )
 
-        # 🔒 3. Safety check.
         safety_decision = self.safety.check(tool_call)
 
         if not safety_decision.safe:
@@ -111,14 +117,12 @@ class ToolExecutor:
                 error=safety_decision.reason,
             )
 
-        # ⚙️ 4. Execute using trusted context.
         result = self.runtime.execute(
             tool=tool,
             arguments=tool_call.arguments,
             context=self.context,
         )
 
-        # 📝 5. Audit actual execution outcome.
         message = (
             "Tool executed successfully."
             if result.success
