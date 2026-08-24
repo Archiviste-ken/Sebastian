@@ -2,6 +2,7 @@ import pytest
 
 from app.llm.gateway import ModelGateway
 
+
 def test_base_model_gateway_is_not_implemented():
     gateway = ModelGateway()
 
@@ -10,7 +11,7 @@ def test_base_model_gateway_is_not_implemented():
             [
                 {
                     "role": "user",
-                    "content": "Hello",
+                    "content": "Hello Sebastian",
                 }
             ]
         )
