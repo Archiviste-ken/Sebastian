@@ -18,7 +18,11 @@ from app.tools.definition import ToolDefinition
 from app.tools.executor import ToolExecutor
 from app.tools.registry import ToolRegistry
 from app.tools.runtime import ToolRuntime
-from app.tools.builtin.git import git_diff, git_status
+from app.tools.builtin.git import (
+    git_diff,
+    git_log,
+    git_status,
+)
 from app.tools.context import ExecutionContext
 
 def test_read_file_full_execution_pipeline(tmp_path: Path):
@@ -725,4 +729,54 @@ def test_git_diff_full_execution_pipeline():
 
     assert len(events) == 1
     assert events[0].tool_name == "git_diff"
+    assert events[0].success is True
+
+def test_git_log_full_execution_pipeline():
+    context = ExecutionContext(
+        workspace=Path.cwd(),
+    )
+
+    registry = ToolRegistry()
+
+    registry.register(
+        ToolDefinition(
+            name="git_log",
+            description="Show recent Git commits.",
+            handler=git_log,
+            uses_context=True,
+        )
+    )
+
+    permission_kernel = PermissionKernel(
+        {
+            "git_log": PermissionLevel.AUTONOMOUS,
+        }
+    )
+
+    audit_recorder = AuditRecorder()
+
+    executor = ToolExecutor(
+        registry=registry,
+        permission_kernel=permission_kernel,
+        safety=ToolSafety(workspace=context.workspace),
+        runtime=ToolRuntime(),
+        audit_recorder=audit_recorder,
+        context=context,
+    )
+
+    result = executor.execute(
+        ToolCall(
+            tool_name="git_log",
+            arguments={},
+        )
+    )
+
+    assert result.status == ToolResultStatus.SUCCESS
+    assert result.success is True
+    assert result.data["return_code"] == 0
+
+    events = audit_recorder.events()
+
+    assert len(events) == 1
+    assert events[0].tool_name == "git_log"
     assert events[0].success is True
