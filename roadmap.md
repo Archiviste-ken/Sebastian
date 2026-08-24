@@ -80,7 +80,7 @@ V1 covers Phases 0–11; V2 covers 12–13; V3 covers 14–16; V4 is Phase 17; a
 
 **Goal:** Make Sebastian reliably execute real digital tasks on the local computer: files, terminal, Python, Git, documents/data, while building intent, context, planning, permissions, execution, observation, verification, recovery, persistent state, and cancellation. V1 ends at Phase 11. fileciteturn11file1L623-L664
 
-## 🧱 Phase 0 — Foundation
+## 🧱 Phase 0 — Foundation (✅)
 
 ### 🎯 Goal
 Build the boring infrastructure correctly.
@@ -138,7 +138,7 @@ Do not proceed until tests run reliably, state persists, failures are logged, an
 
 ---
 
-## 🛠️ Phase 1 — Tool Runtime + Permission Kernel
+## 🛠️ Phase 1 — Tool Runtime + Permission Kernel (✅)
 
 ### 🎯 Goal
 Make Sebastian able to perform **one controlled action at a time**.
