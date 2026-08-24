@@ -1,8 +1,11 @@
+import pytest
+
 from app.config import Settings
 from app.intent.engine import IntentEngine
 from app.llm.groq import GroqModelGateway
 
 
+@pytest.mark.real_groq
 def test_real_groq_generates_intent():
     settings = Settings()
 

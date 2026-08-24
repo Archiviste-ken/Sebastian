@@ -1,6 +1,6 @@
 from typing import Any
 
-from groq import Groq
+from groq import AuthenticationError, Groq
 
 from app.llm.gateway import ModelGateway, ModelResponse
 
@@ -16,12 +16,17 @@ class GroqModelGateway(ModelGateway):
 
         if client is not None:
             self.client = client
-        elif api_key:
-            self.client = Groq(
-                api_key=api_key,
-            )
         else:
-            self.client = Groq()
+            key = api_key or ""
+
+            if not key.strip():
+                raise RuntimeError(
+                    "Groq API key is required."
+                )
+
+            self.client = Groq(
+                api_key=key,
+            )
 
     def generate(
         self,
@@ -36,9 +41,14 @@ class GroqModelGateway(ModelGateway):
         if response_format is not None:
             request["response_format"] = response_format
 
-        response = self.client.chat.completions.create(
-            **request,
-        )
+        try:
+            response = self.client.chat.completions.create(
+                **request,
+            )
+        except AuthenticationError as exc:
+            raise RuntimeError(
+                "Groq authentication failed: verify GROQ_API_KEY in .env."
+            ) from exc
 
         content = response.choices[0].message.content or ""
 
