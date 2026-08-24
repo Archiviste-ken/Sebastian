@@ -15,10 +15,18 @@ class GroqModelGateway(ModelGateway):
     def generate(
         self,
         messages: list[dict[str, str]],
+        response_format: dict[str, Any] | None = None,
     ) -> ModelResponse:
+        request: dict[str, Any] = {
+            "model": self.model,
+            "messages": messages,
+        }
+
+        if response_format is not None:
+            request["response_format"] = response_format
+
         response = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
+            **request,
         )
 
         content = response.choices[0].message.content or ""

@@ -12,5 +12,6 @@ class ModelGateway:
     def generate(
         self,
         messages: list[dict[str, str]],
+        response_format: dict[str, Any] | None = None,
     ) -> ModelResponse:
         raise NotImplementedError

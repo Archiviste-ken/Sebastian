@@ -1,12 +1,19 @@
+import pytest
+from pydantic import ValidationError
+
 from app.intent.engine import IntentEngine
 from app.llm.gateway import ModelResponse
 
 
 class FakeGateway:
-    def generate(self, messages):
+    def generate(
+        self,
+        messages,
+        response_format=None,
+    ):
         return ModelResponse(
             content=(
-                '{'
+                "{"
                 '"goal":"Clean the project folder",'
                 '"constraints":["Do not permanently delete files"],'
                 '"expected_outcome":"The folder is organized",'
@@ -14,7 +21,7 @@ class FakeGateway:
                 '"missing_information":["Which folder should be cleaned"],'
                 '"required_permissions":["filesystem"],'
                 '"success_criteria":["Folder is organized"]'
-                '}'
+                "}"
             )
         )
 
@@ -53,16 +60,14 @@ def test_intent_engine_parses_structured_response():
     assert intent.success_criteria == [
         "Folder is organized"
     ]
-    
-import pytest
-from pydantic import ValidationError
-
-from app.intent.engine import IntentEngine
-from app.llm.gateway import ModelResponse
 
 
 class InvalidGateway:
-    def generate(self, messages):
+    def generate(
+        self,
+        messages,
+        response_format=None,
+    ):
         return ModelResponse(
             content='{"goal": ""}'
         )

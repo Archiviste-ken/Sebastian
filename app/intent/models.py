@@ -29,7 +29,7 @@ class Intent(BaseModel):
 
     required_permissions: list[str] = Field(
         default_factory=list,
-        description="Permissions that may be required to accomplish the task.",
+        description="Permissions that may be required.",
     )
 
     success_criteria: list[str] = Field(
