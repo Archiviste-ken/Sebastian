@@ -5,12 +5,12 @@ from app.llm.groq import GroqModelGateway
 
 
 class FakeCompletions:
-    def create(self, *, model, messages):
+    def create(self, *, model, messages, response_format=None):
         return SimpleNamespace(
             choices=[
                 SimpleNamespace(
                     message=SimpleNamespace(
-                        content="Hello from Groq!"
+                        content="Hello from Groq!",
                     )
                 )
             ]
@@ -32,7 +32,7 @@ def test_groq_gateway_generates_response():
     )
 
     result = gateway.generate(
-        [
+        messages=[
             {
                 "role": "user",
                 "content": "Hello",

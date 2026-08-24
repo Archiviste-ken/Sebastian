@@ -1,16 +1,27 @@
 from typing import Any
 
+from groq import Groq
+
 from app.llm.gateway import ModelGateway, ModelResponse
 
 
 class GroqModelGateway(ModelGateway):
     def __init__(
         self,
-        client: Any,
         model: str,
+        client: Any | None = None,
+        api_key: str | None = None,
     ):
-        self.client = client
         self.model = model
+
+        if client is not None:
+            self.client = client
+        elif api_key:
+            self.client = Groq(
+                api_key=api_key,
+            )
+        else:
+            self.client = Groq()
 
     def generate(
         self,
