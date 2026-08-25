@@ -137,9 +137,12 @@ class CapabilitySelector:
             "run tests",
             "run the test suite",
             "run test suite",
+            "run the project tests",
+            "run the project's tests",
             "pytest",
             "execute the tests",
             "execute tests",
+            "execute the test suite",
         )
 
         return any(

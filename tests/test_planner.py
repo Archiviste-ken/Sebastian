@@ -25,9 +25,9 @@ def test_planner_builds_plan_from_intent():
 
     action = plan.actions[0]
 
-    assert action.action_id == "prepare-task"
-    assert action.tool == "prepare_task"
-    assert action.risk == ActionRisk.LOW
+    assert action.action_id == "candidate-1"
+    assert action.tool == "run_command"
+    assert action.risk == ActionRisk.HIGH
 
     assert plan.success_criteria == [
         "The test suite completes.",
