@@ -1,35 +1,17 @@
-# # 🧰 Tool call model
-# # This describes a single tool invocation from within an action.
-# # It records which tool ran, which action triggered it, and what arguments it received.
-
-# from typing import Any
-
-# from pydantic import BaseModel, Field
-
-
-# class ToolCall(BaseModel):
-#     # 🆔 Unique call identifier.
-#     id: str
-
-#     # ⚙️ The action that requested this tool call.
-#     action_id: str
-
-#     # 🏷️ Name of the tool being invoked.
-#     tool_name: str = Field(min_length=1)
-
-#     # 📥 Arguments passed to the tool.
-#     arguments: dict[str, Any] = {}
-
+# 📦 Import Any from typing for flexible type hinting.
 from typing import Any
 
+# 📦 Import BaseModel from pydantic to define the data model.
 from pydantic import BaseModel
 
 
 # 🧰 Tool call model
-# This small request object travels through the execution pipeline.
+# 🎯 This small request object travels through the execution pipeline.
 class ToolCall(BaseModel):
     # 🏷️ Registered name of the tool to run, such as `read_file`.
+    # 📝 Represents the string name of the tool.
     tool_name: str
 
     # 📦 Named values the tool handler needs, such as a file path.
+    # 📝 A dictionary storing the tool's arguments, defaulting to an empty dict.
     arguments: dict[str, Any] = {}
