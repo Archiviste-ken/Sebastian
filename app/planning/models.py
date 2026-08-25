@@ -60,3 +60,12 @@ class Plan(BaseModel):
     success_criteria: list[str] = Field(
         min_length=1,
     )
+    
+class ResolvedArguments(BaseModel):
+    tool_name: str = Field(
+        min_length=1,
+    )
+
+    arguments: dict = Field(
+        default_factory=dict,
+    )

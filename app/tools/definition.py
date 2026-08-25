@@ -12,3 +12,4 @@ class ToolDefinition:
     description: str
     handler: Callable[..., Any]
     uses_context: bool = False
+    argument_schema: dict[str, Any] | None = None
