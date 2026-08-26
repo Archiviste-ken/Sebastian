@@ -9,6 +9,7 @@ dependencies = [
     "sqlalchemy>=2.0",
     "groq>=0.30",
     "python-dotenv>=1.0",
+    "jsonschema>=4.0",
 ]
 
 [project.optional-dependencies]

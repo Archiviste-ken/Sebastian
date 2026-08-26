@@ -136,3 +136,14 @@ class ResolvedArguments(BaseModel):
         default_factory=dict,
     # ⚙️ Close arguments field definition
     )
+    
+class ArgumentResolutionResult(BaseModel):
+    resolved: bool
+
+    arguments: dict = Field(
+        default_factory=dict,
+    )
+
+    missing_information: list[str] = Field(
+        default_factory=list,
+    )
