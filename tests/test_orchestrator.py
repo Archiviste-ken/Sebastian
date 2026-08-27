@@ -30,7 +30,11 @@ class FakeGateway(ModelGateway):
 
     def generate(self, messages, response_format=None):
         if response_format is not None:
-            return ModelResponse(content=self._intent_json, raw=None)
+            schema_name = response_format.get("json_schema", {}).get("name")
+            if schema_name == "sebastian_intent":
+                return ModelResponse(content=self._intent_json, raw=None)
+            elif schema_name == "sebastian_resolved_arguments":
+                return ModelResponse(content=self._arg_json, raw=None)
         return ModelResponse(content=self._arg_json, raw=None)
 
 
@@ -91,3 +95,70 @@ def test_run_blocked_tool(tmp_path):
     )
     report = agent.run("Read test.txt")
     assert not report.success
+
+
+def test_missing_information_stops_without_fake_tool(tmp_path):
+    """When information is genuinely missing, orchestrator stops safely without executing any tools."""
+    import json
+    
+    intent_json = json.dumps({
+        "goal": "Read a file",
+        "constraints": [],
+        "expected_outcome": "File read",
+        "forbidden_actions": [],
+        "missing_information": ["Which file should I read?"],
+        "required_permissions": ["read_file"],
+        "success_criteria": []
+    })
+    
+    agent = Sebastian(
+        workspace=tmp_path,
+        gateway=FakeGateway(intent_json=intent_json, workspace=tmp_path),
+        permissions={"read_file": PermissionLevel.AUTONOMOUS},
+    )
+    
+    report = agent.run("Read a file")
+    
+    assert not report.success
+    assert report.missing_information == ["Which file should I read?"]
+    assert report.execution.actions_total == 0
+    assert report.execution.actions_completed == 0
+    assert report.execution.reason == "Missing information"
+    # No fake tool calls executed
+    assert len(report.audit_events) == 0
+
+
+def test_explicit_path_preserved(tmp_path):
+    """An explicit path means no missing information is present."""
+    import json
+    
+    intent_json = json.dumps({
+        "goal": "Read README.md",
+        "constraints": [],
+        "expected_outcome": "File read",
+        "forbidden_actions": [],
+        "missing_information": [], # LLM should leave this empty for explicit paths
+        "required_permissions": ["read_file"],
+        "success_criteria": []
+    })
+    
+    (tmp_path / "README.md").write_text("explicit path works")
+    
+    arg_json = json.dumps({
+        "tool_name": "read_file",
+        "arguments": {"path": str(tmp_path / "README.md")},
+    })
+    
+    agent = Sebastian(
+        workspace=tmp_path,
+        gateway=FakeGateway(intent_json=intent_json, arg_json=arg_json, workspace=tmp_path),
+        permissions={"read_file": PermissionLevel.AUTONOMOUS},
+    )
+    
+    report = agent.run("Read README.md")
+    
+    assert report.success
+    assert len(report.missing_information) == 0
+    assert report.execution.actions_completed == 1
+    assert report.audit_events[0].tool_name == "read_file"
+    assert report.execution.outcomes[0].tool_result.data == "explicit path works"

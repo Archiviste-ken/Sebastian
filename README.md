@@ -1,98 +1,43 @@
-# 🎩 Sebastian
+# Sebastian
 
-> **Give Sebastian the outcome. He figures out the work.**
+**Sebastian** is a deterministic, safety-first AI agent runtime written in Python. Unlike typical ReAct chatbots which blindly trust LLM-generated code and tool calls, Sebastian decouples *intent* from *execution*. 
 
-<p align="center">
-  <img src="public/sebastian.png" alt="Sebastian" width="500">
-</p>
+An LLM is used purely as a parsing layer to produce structured intents and arguments. The core system deterministically routes these intents through a strict pipeline of context compilation, static planning, execution, verification, and automated recovery. It implements a fully functional permission kernel, sandboxed execution, and an evidence-grounded response generator.
 
-Sebastian is an **AI execution layer** designed to turn natural-language goals into real, verified digital actions.
+## Architecture
 
-Instead of telling an AI exactly how to complete a task, you tell Sebastian **what you want done**.
+The LLM is NOT the final execution authority. The pipeline works as follows:
 
-## ⚡ How it works
+User -> Intent (LLM) -> Context Compiler -> Planner -> ActionExecutor -> ToolExecutor (Applies Permissions & Safety) -> Verification -> Checkpoint -> Response Generator -> User
 
-```text
-🎯 Intent
-   ↓
-🔎 Context
-   ↓
-🗺️ Plan
-   ↓
-🛡️ Permission
-   ↓
-⚙️ Execute
-   ↓
-👀 Observe
-   ↓
-✅ Verify
-   ↓
-🔁 Recover
-   ↓
-🏁 Verified Outcome
+## Built-in Tools
+- read_file
+- list_directory
+- write_file
+- create_directory
+- move_file
+- run_command
+- run_python
+- git_status
+- git_diff
+- git_log
 
+## Configuration
+Set up your .env file:
+\\\ash
+GROQ_API_KEY=your_groq_key
+\\\`n
+## Running the Demo
+\\\ash
+python demo.py
+\\\`n
+## Running Tests
+\\\ash
+pytest tests/ -m "not real_groq"
+\\\`n
+## Known Limitations (V1)
+- Single turn execution (no multi-step LLM feedback loops yet)
+- Keyword-based static planner
 
-Sebastian progressively operates across:
-
-💻 Local computer
-📁 Files & folders
-⌨️ Terminal
-🐍 Python
-🐙 Git / GitHub
-🌐 Browser
-🔌 External services
-🧠 Core principles
-Outcome over procedure — tell Sebastian what you want, not every step.
-Context before action — discover what matters before acting.
-Evidence before success — Sebastian never assumes something worked.
-Recovery over restart — failures trigger diagnosis and replanning.
-Permission over blind autonomy — consequential actions require appropriate approval.
-Reliability over complexity — every capability must earn its place.
-🎯 Example
-
-“Sebastian, this Python project is broken. Fix it.”
-
-Sebastian discovers the relevant project, investigates the environment, plans the work, executes the necessary actions, verifies the result, and reports what actually happened.
-
-👤 "Fix this project."
-          ↓
-🎩 Sebastian
-          ↓
-🔎 Finds the relevant project
-          ↓
-🧠 Understands the problem
-          ↓
-🗺️ Plans the work
-          ↓
-⚙️ Executes the required actions
-          ↓
-👀 Observes what actually happened
-          ↓
-✅ Verifies the result
-          ↓
-🔁 Recovers if something fails
-          ↓
-🏁 Reports the verified outcome
-🛡️ Built for controlled autonomy
-
-Sebastian is not given unrestricted control.
-
-🟢 Autonomous
-   Read · Search · Analyze · Test · Organize
-
-🟡 Approval required
-   Upload · Push · Send · Submit · Important changes
-
-🔴 Blocked / Explicit authorization
-   Destructive actions · Credentials · Financial · Legal
-
-The goal is not to make Sebastian blindly autonomous.
-
-The goal is to make him reliably autonomous within clearly defined authority.
-
-🎩 The goal
-
-Build an AI that doesn't just tell you how to do things — it actually gets them done.
-
-Intent → Execution → Verified Outcome
-
+## V2 Direction
+Future versions will introduce LLM-driven planning with strict sub-agent isolation and multi-turn capabilities.

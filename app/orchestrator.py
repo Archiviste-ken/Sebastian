@@ -45,6 +45,8 @@ from app.tools.runtime import ToolRuntime
 from app.verification.engine import VerificationEngine
 
 
+from app.response.models import FinalResponse
+
 @dataclass
 class TaskReport:
     """Final outcome returned to the caller after a full run."""
@@ -55,6 +57,8 @@ class TaskReport:
     plan_goal: str
     execution: ExecutionReport
     audit_events: list[AuditEvent] = field(default_factory=list)
+    missing_information: list[str] = field(default_factory=list)
+    response: FinalResponse | None = None
 
 
 # Default permission mapping for all builtin tools.
@@ -139,8 +143,19 @@ class Sebastian:
             checkpoint_store=self._checkpoint_store,
             max_actions=max_actions,
         )
+        from app.response.generator import ResponseGenerator
+        self._response_generator = ResponseGenerator(gateway)
 
     # ── public API ────────────────────────────────────────────────────
+
+    def _finalize(self, request: str, report: TaskReport) -> TaskReport:
+        try:
+            report.response = self._response_generator.generate(request, report)
+        except Exception as e:
+            # Fallback if generator fails
+            from app.response.models import FinalResponse
+            report.response = FinalResponse(status="failure", answer=f"Failed to generate response: {e}")
+        return report
 
     def run(self, request: str) -> TaskReport:
         """Execute a natural-language request through the full V1 pipeline."""
@@ -149,14 +164,41 @@ class Sebastian:
         # Phase 2: Intent extraction (LLM)
         intent = self._intent_engine.parse(request)
 
+        # Stop safely if information is genuinely missing
+        if intent.missing_information:
+            return self._finalize(request, TaskReport(
+                task_id=task_id,
+                success=False,
+                goal=intent.goal,
+                plan_goal="Pending Information",
+                execution=ExecutionReport(
+                    task_id=task_id, success=False, actions_completed=0, actions_failed=0, actions_total=0, reason="Missing information"
+                ),
+                audit_events=[],
+                missing_information=intent.missing_information,
+            ))
+
         # Phase 3: Context compilation (deterministic)
         self._context_compiler.compile(
             user_request=request,
             intent=intent,
         )
 
-        # Phase 4: Plan generation (deterministic keyword selector)
-        plan = self._planner.build(intent)
+        try:
+            # Phase 4: Plan generation (deterministic keyword selector)
+            plan = self._planner.build(intent)
+        except ValueError as e:
+            # Handle cases where no capabilities are found
+            return self._finalize(request, TaskReport(
+                task_id=task_id,
+                success=False,
+                goal=intent.goal,
+                plan_goal="Planning Failed",
+                execution=ExecutionReport(
+                    task_id=task_id, success=False, actions_completed=0, actions_failed=0, actions_total=0, reason=str(e)
+                ),
+                audit_events=[],
+            ))
 
         # Resolve arguments for each action via LLM (existing Phase 4 infra)
         resolved_actions = []
@@ -183,14 +225,14 @@ class Sebastian:
             workspace=self._workspace,
         )
 
-        return TaskReport(
+        return self._finalize(request, TaskReport(
             task_id=task_id,
             success=report.success,
             goal=intent.goal,
             plan_goal=plan.goal,
             execution=report,
             audit_events=list(self._audit.events()),
-        )
+        ))
 
     def cancel(self, task_id: str) -> None:
         """Cancel a running task by ID."""

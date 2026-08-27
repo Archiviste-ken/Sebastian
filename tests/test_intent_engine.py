@@ -80,3 +80,28 @@ def test_intent_engine_rejects_invalid_model_output():
 
     with pytest.raises(ValidationError):
         engine.parse("Do something.")
+
+class PromptSpyGateway:
+    def __init__(self):
+        self.messages = []
+        
+    def generate(self, messages, response_format=None):
+        self.messages = messages
+        return ModelResponse(
+            content='{"goal": "dummy", "constraints": [], "expected_outcome": "dummy", "forbidden_actions": [], "missing_information": [], "required_permissions": [], "success_criteria": []}'
+        )
+
+def test_intent_engine_system_prompt_clarifies_missing_information():
+    spy = PromptSpyGateway()
+    engine = IntentEngine(gateway=spy)
+    
+    engine.parse("Read README.md")
+    
+    assert len(spy.messages) == 2
+    system_prompt = spy.messages[0]["content"]
+    
+    # Assert critical phrases are present
+    assert "information genuinely required FROM THE USER" in system_prompt
+    assert "Do NOT list tool-obtainable information" in system_prompt
+    assert "merely because Sebastian does not have it yet" in system_prompt
+    assert "If a path is explicitly provided" in system_prompt

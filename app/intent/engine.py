@@ -44,8 +44,11 @@ class IntentEngine: # 🧠 Main class for extracting user intents using LLMs
                     "- expected_outcome: what success should produce\n" # 🎯 Describe expected outcome field
                     "- forbidden_actions: actions that must not happen; " # ❌ Describe forbidden actions field
                     "use [] if none\n" # 🎯 Instruct on empty forbidden actions
-                    "- missing_information: information required before " # 🔍 Describe missing info field
-                    "safe execution; use [] if none\n" # 🎯 Instruct on empty missing info
+                    "- missing_information: information genuinely required FROM THE USER before "
+                    "safe execution can begin. Use [] if none. "
+                    "CRITICAL: Do NOT list tool-obtainable information (e.g., file contents, directory structures) "
+                    "merely because Sebastian does not have it yet. If a path is explicitly provided (e.g., 'README.md'), "
+                    "do NOT ask for it. Only list information that cannot be safely obtained via tools.\n"
                     "- required_permissions: permissions/capabilities that " # 🔐 Describe required permissions field
                     "may be needed; use [] if none\n" # 🎯 Instruct on empty permissions
                     "- success_criteria: conditions that indicate success; " # ✅ Describe success criteria field

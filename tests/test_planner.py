@@ -34,42 +34,19 @@ def test_planner_builds_plan_from_intent():
     ]
 
 
-def test_planner_requests_missing_information():
+def test_planner_raises_value_error_on_no_capabilities():
     intent = Intent(
-        goal="Clean the folder.",
-        constraints=[
-            "Do not permanently delete anything.",
-        ],
-        expected_outcome="The folder is organized.",
-        forbidden_actions=[
-            "Permanent deletion.",
-        ],
-        missing_information=[
-            "Which folder should be cleaned?",
-        ],
-        required_permissions=["filesystem"],
-        success_criteria=[
-            "The folder is organized.",
-        ],
+        goal="Do something completely unsupported.",
+        constraints=[],
+        expected_outcome="Magic happens.",
+        forbidden_actions=[],
+        missing_information=[],
+        required_permissions=[],
+        success_criteria=["Magic."],
     )
 
     planner = Planner()
 
-    plan = planner.build(intent)
-
-    assert len(plan.actions) == 1
-
-    action = plan.actions[0]
-
-    assert action.action_id == "request-missing-information"
-    assert action.tool == "ask_user"
-
-    assert action.arguments == {
-        "questions": [
-            "Which folder should be cleaned?",
-        ]
-    }
-
-    assert plan.success_criteria == [
-        "All required information is available.",
-    ]
+    import pytest
+    with pytest.raises(ValueError, match="No available Sebastian capability matches this request."):
+        planner.build(intent)

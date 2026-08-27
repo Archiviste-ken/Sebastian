@@ -91,13 +91,40 @@ class ArgumentResolver:
         ]
 # 🈳 Blank line
 
+        # 🧠 Create the strict schema for resolution
+        schema = ResolvedArguments.model_json_schema()
+        schema["additionalProperties"] = False
+        
+        # Inject the tool's specific argument schema so the LLM knows what properties are valid
+        if tool.argument_schema:
+            schema["properties"]["arguments"] = tool.argument_schema
+            schema["properties"]["arguments"]["additionalProperties"] = False
+            # Ensure required array exists
+            if "required" not in schema["properties"]["arguments"]:
+                schema["properties"]["arguments"]["required"] = list(schema["properties"]["arguments"].get("properties", {}).keys())
+        else:
+            if "arguments" in schema.get("properties", {}):
+                schema["properties"]["arguments"]["additionalProperties"] = False
+        
+        schema["required"] = list(schema.get("properties", {}).keys())
+        
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "sebastian_resolved_arguments",
+                "strict": True,
+                "schema": schema,
+            },
+        }
+
         # ⚙️ Call the LLM gateway to generate a response
         response = self.gateway.generate(
             # 🧠 Pass the constructed messages
             messages=messages,
+            # 📝 Pass the response format
+            response_format=response_format,
         # ⚙️ Close generate method call
         )
-# 🈳 Blank line
 
         # 🧠 Parse the LLM response into ResolvedArguments model
         resolved = ResolvedArguments.model_validate_json(

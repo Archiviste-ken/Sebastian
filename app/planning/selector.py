@@ -163,6 +163,10 @@ class CapabilitySelector:
             "file contents",
             # 🔍 Term 'contents of the file'
             "contents of the file",
+            # 🔍 Term 'content of'
+            "content of",
+            # 🔍 Term 'readme'
+            "readme",
         # 🔍 Close explicit_terms tuple
         )
 # 🈳 Blank line
